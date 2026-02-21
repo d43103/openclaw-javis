@@ -1,0 +1,32 @@
+{
+  "cli_version": "0.4.5",
+  "checkpoint_id": "629caa993ce1",
+  "strategy": "manual-commit",
+  "branch": "javis-talk-mode",
+  "checkpoints_count": 2,
+  "files_touched": [
+    "apps/ios/Sources/OpenClaw.entitlements",
+    "apps/ios/project.yml",
+    "git-hooks/commit-msg",
+    "git-hooks/post-commit",
+    "git-hooks/pre-push",
+    "git-hooks/prepare-commit-msg",
+    "scripts/diaglog.sh"
+  ],
+  "sessions": [
+    {
+      "metadata": "/62/9caa993ce1/0/metadata.json",
+      "transcript": "/62/9caa993ce1/0/full.jsonl",
+      "context": "/62/9caa993ce1/0/context.md",
+      "content_hash": "/62/9caa993ce1/0/content_hash.txt",
+      "prompt": "/62/9caa993ce1/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 103,
+    "cache_creation_tokens": 49069,
+    "cache_read_tokens": 3898189,
+    "output_tokens": 1880,
+    "api_call_count": 61
+  }
+}
