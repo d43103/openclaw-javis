@@ -59,6 +59,8 @@ export type TalkConfig = {
   apiKey?: string;
   /** Stop speaking when user starts talking (default: true). */
   interruptOnSpeech?: boolean;
+  /** Local TTS server base URL for the gateway TTS proxy (e.g. http://192.168.x.x:8031). */
+  ttsBaseUrl?: string;
 };
 
 export type GatewayControlUiConfig = {

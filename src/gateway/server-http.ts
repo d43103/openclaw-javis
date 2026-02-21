@@ -57,6 +57,105 @@ import { GATEWAY_CLIENT_MODES, normalizeGatewayClientMode } from "./protocol/cli
 import type { GatewayWsClient } from "./server/ws-types.js";
 import { handleToolsInvokeHttpRequest } from "./tools-invoke-http.js";
 
+async function handleTtsSpeechProxyRequest(
+  req: IncomingMessage,
+  res: ServerResponse,
+  opts: {
+    auth: ResolvedGatewayAuth;
+    trustedProxies: string[];
+    rateLimiter?: AuthRateLimiter;
+  },
+): Promise<void> {
+  const { auth, trustedProxies, rateLimiter } = opts;
+
+  const token = getBearerToken(req);
+  const authResult = await authorizeGatewayConnect({
+    auth,
+    connectAuth: token ? { token, password: token } : null,
+    req,
+    trustedProxies,
+    rateLimiter,
+  });
+  if (!authResult.ok) {
+    sendGatewayAuthFailure(res, authResult);
+    return;
+  }
+
+  if (req.method !== "POST") {
+    res.statusCode = 405;
+    res.setHeader("Allow", "POST");
+    res.setHeader("Content-Type", "text/plain; charset=utf-8");
+    res.end("Method Not Allowed");
+    return;
+  }
+
+  const cfg = loadConfig();
+  const ttsBaseUrl = cfg.talk?.ttsBaseUrl?.trim();
+  if (!ttsBaseUrl) {
+    res.statusCode = 503;
+    res.setHeader("Content-Type", "application/json; charset=utf-8");
+    res.end(JSON.stringify({ ok: false, error: "talk.ttsBaseUrl not configured" }));
+    return;
+  }
+
+  const targetUrl = `${ttsBaseUrl.replace(/\/$/, "")}/v1/audio/speech`;
+
+  const chunks: Buffer[] = [];
+  await new Promise<void>((resolve, reject) => {
+    req.on("data", (chunk: Buffer) => chunks.push(chunk));
+    req.on("end", resolve);
+    req.on("error", reject);
+  });
+  const body = Buffer.concat(chunks);
+
+  try {
+    const { request: httpRequest } = await import("node:http");
+    const { request: httpsRequest } = await import("node:https");
+    const targetParsed = new URL(targetUrl);
+    const isHttps = targetParsed.protocol === "https:";
+    const requestFn = isHttps ? httpsRequest : httpRequest;
+
+    const proxyReq = requestFn(
+      targetUrl,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": req.headers["content-type"] ?? "application/json",
+          Accept: req.headers["accept"] ?? "audio/pcm",
+          "Content-Length": String(body.length),
+        },
+      },
+      (proxyRes) => {
+        res.statusCode = proxyRes.statusCode ?? 200;
+        for (const [key, value] of Object.entries(proxyRes.headers)) {
+          if (key.toLowerCase() !== "transfer-encoding" && value !== undefined) {
+            res.setHeader(key, value);
+          }
+        }
+        proxyRes.pipe(res);
+      },
+    );
+    proxyReq.on("error", (err) => {
+      if (!res.headersSent) {
+        res.statusCode = 502;
+        res.setHeader("Content-Type", "application/json; charset=utf-8");
+        res.end(JSON.stringify({ ok: false, error: `TTS proxy error: ${String(err)}` }));
+      } else {
+        res.destroy();
+      }
+    });
+    proxyReq.write(body);
+    proxyReq.end();
+    await new Promise<void>((resolve) => res.on("finish", resolve));
+  } catch (err) {
+    if (!res.headersSent) {
+      res.statusCode = 502;
+      res.setHeader("Content-Type", "application/json; charset=utf-8");
+      res.end(JSON.stringify({ ok: false, error: `TTS proxy error: ${String(err)}` }));
+    }
+  }
+}
+
 type SubsystemLogger = ReturnType<typeof createSubsystemLogger>;
 type HookAuthFailure = { count: number; windowStartedAtMs: number };
 
@@ -506,6 +605,14 @@ export function createGatewayHttpServer(opts: {
         req.url = scopedCanvas.rewrittenUrl;
       }
       const requestPath = new URL(req.url ?? "/", "http://localhost").pathname;
+      if (requestPath === "/v1/audio/speech") {
+        await handleTtsSpeechProxyRequest(req, res, {
+          auth: resolvedAuth,
+          trustedProxies,
+          rateLimiter,
+        });
+        return;
+      }
       if (await handleHooksRequest(req, res)) {
         return;
       }

@@ -63,6 +63,7 @@ final class TalkModeManager: NSObject {
     private var defaultOutputFormat: String?
     private var apiKey: String?
     private var ttsBaseUrl: URL?
+    private var ttsAuthToken: String?
     private var voiceAliases: [String: String] = [:]
     private var interruptOnSpeech: Bool = true
     private var mainSessionKey: String = "main"
@@ -999,7 +1000,7 @@ final class TalkModeManager: NSObject {
                 let model = self.currentModelId ?? self.defaultModelId ?? "qwen3-tts"
                 let stream = Self.openAITTSStream(
                     baseUrl: ttsBaseUrl, text: cleaned, model: model, voice: voice,
-                    sampleRate: 24000, timeoutSeconds: 30)
+                    sampleRate: 24000, timeoutSeconds: 30, authToken: self.ttsAuthToken)
                 if self.interruptOnSpeech {
                     do { try self.startRecognition() } catch {
                         self.logger.warning("startRecognition failed: \(error.localizedDescription, privacy: .public)")
@@ -1231,7 +1232,7 @@ final class TalkModeManager: NSObject {
             let model = self.currentModelId ?? self.defaultModelId ?? "qwen3-tts"
             prefetchedStream = Self.openAITTSStream(
                 baseUrl: baseUrl, text: trimmed, model: model, voice: voice,
-                sampleRate: 24000, timeoutSeconds: 30)
+                sampleRate: 24000, timeoutSeconds: 30, authToken: self.ttsAuthToken)
         } else {
             prefetchedStream = nil
         }
@@ -1387,7 +1388,7 @@ final class TalkModeManager: NSObject {
             let model = self.currentModelId ?? self.defaultModelId ?? "qwen3-tts"
             return Self.openAITTSStream(
                 baseUrl: baseUrl, text: text, model: model, voice: voice,
-                sampleRate: 24000, timeoutSeconds: 30)
+                sampleRate: 24000, timeoutSeconds: 30, authToken: self.ttsAuthToken)
         }) {
             GatewayDiagnostics.log("talk incremental tts: provider=openai-tts")
             let finished = await OpenAITTSPlayerIOS.shared.play(
@@ -1798,9 +1799,17 @@ extension TalkModeManager {
             let storedBaseUrl = GatewaySettingsStore.loadTalkTtsBaseUrl()
             if let baseUrlStr = storedBaseUrl, !baseUrlStr.isEmpty, let baseUrl = URL(string: baseUrlStr) {
                 self.ttsBaseUrl = baseUrl
-                GatewayDiagnostics.log("talk reloadConfig: ttsBaseUrl=\(baseUrlStr)")
+                self.ttsAuthToken = nil
+                GatewayDiagnostics.log("talk reloadConfig: ttsBaseUrl=\(baseUrlStr) (direct)")
+            } else if let httpBase = await gateway.currentHttpBaseURL(),
+                      let authToken = await gateway.currentAuthToken() {
+                // No local TTS URL configured — route TTS through the gateway proxy.
+                self.ttsBaseUrl = httpBase
+                self.ttsAuthToken = authToken
+                GatewayDiagnostics.log("talk reloadConfig: ttsBaseUrl=\(httpBase.absoluteString) (gateway proxy)")
             } else {
                 self.ttsBaseUrl = nil
+                self.ttsAuthToken = nil
                 GatewayDiagnostics.log("talk reloadConfig: ttsBaseUrl=nil (not configured)")
             }
             if let interrupt = talk?["interruptOnSpeech"] as? Bool {
@@ -1953,7 +1962,8 @@ extension TalkModeManager {
         model: String,
         voice: String,
         sampleRate: Int,
-        timeoutSeconds: TimeInterval
+        timeoutSeconds: TimeInterval,
+        authToken: String? = nil
     ) -> AsyncThrowingStream<Data, Error> {
         AsyncThrowingStream { continuation in
             let task = Task {
@@ -1972,6 +1982,9 @@ extension TalkModeManager {
                     req.httpBody = body
                     req.timeoutInterval = timeoutSeconds
                     req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+                    if let authToken {
+                        req.setValue("Bearer \(authToken)", forHTTPHeaderField: "Authorization")
+                    }
                     req.setValue("audio/pcm", forHTTPHeaderField: "Accept")
                     let sessionConfig = URLSessionConfiguration.ephemeral
                     sessionConfig.timeoutIntervalForRequest = timeoutSeconds
@@ -2057,6 +2070,7 @@ final class OpenAITTSPlayerIOS {
         engine = newEngine
         player = newPlayer
         newEngine.attach(newPlayer)
+        newPlayer.volume = 1.5
         newEngine.connect(newPlayer, to: newEngine.mainMixerNode, format: format)
         do {
             try newEngine.start()

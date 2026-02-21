@@ -233,6 +233,24 @@ public actor GatewayNodeSession {
         return "\(host):\(port)"
     }
 
+    /// Returns the HTTP(S) base URL derived from the active WebSocket URL (ws→http, wss→https).
+    public func currentHttpBaseURL() -> URL? {
+        guard let wsUrl = self.activeURL,
+              var components = URLComponents(url: wsUrl, resolvingAgainstBaseURL: false) else {
+            return nil
+        }
+        components.scheme = (wsUrl.scheme == "wss") ? "https" : "http"
+        components.path = ""
+        components.query = nil
+        components.fragment = nil
+        return components.url
+    }
+
+    /// Returns the current active authentication token.
+    public func currentAuthToken() -> String? {
+        self.activeToken
+    }
+
     public func sendEvent(event: String, payloadJSON: String?) async {
         guard let channel = self.channel else { return }
         let params: [String: AnyCodable] = [
