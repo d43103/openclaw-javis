@@ -3,10 +3,15 @@
   "checkpoint_id": "629caa993ce1",
   "strategy": "manual-commit",
   "branch": "javis-talk-mode",
-  "checkpoints_count": 2,
+  "checkpoints_count": 8,
   "files_touched": [
     "apps/ios/Sources/OpenClaw.entitlements",
     "apps/ios/project.yml",
+    "apps/macos/Package.swift",
+    "apps/macos/Sources/OpenClaw/SettingsRootView.swift",
+    "apps/macos/Sources/OpenClaw/SpeakerVerifier.swift",
+    "apps/macos/Sources/OpenClaw/TalkModeRuntime.swift",
+    "apps/macos/Sources/OpenClaw/TalkModeSettings.swift",
     "git-hooks/commit-msg",
     "git-hooks/post-commit",
     "git-hooks/pre-push",
@@ -20,13 +25,20 @@
       "context": "/62/9caa993ce1/0/context.md",
       "content_hash": "/62/9caa993ce1/0/content_hash.txt",
       "prompt": "/62/9caa993ce1/0/prompt.txt"
+    },
+    {
+      "metadata": "/62/9caa993ce1/1/metadata.json",
+      "transcript": "/62/9caa993ce1/1/full.jsonl",
+      "context": "/62/9caa993ce1/1/context.md",
+      "content_hash": "/62/9caa993ce1/1/content_hash.txt",
+      "prompt": "/62/9caa993ce1/1/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 103,
-    "cache_creation_tokens": 49069,
-    "cache_read_tokens": 3898189,
-    "output_tokens": 1880,
-    "api_call_count": 61
+    "input_tokens": 7583,
+    "cache_creation_tokens": 438434,
+    "cache_read_tokens": 15693081,
+    "output_tokens": 15743,
+    "api_call_count": 173
   }
 }

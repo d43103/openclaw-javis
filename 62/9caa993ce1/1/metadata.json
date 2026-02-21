@@ -1,0 +1,40 @@
+{
+  "cli_version": "0.4.5",
+  "checkpoint_id": "629caa993ce1",
+  "session_id": "ecfc456f-50fc-47a6-a8b9-deabbb4f2e41",
+  "strategy": "manual-commit",
+  "created_at": "2026-02-21T06:58:58.737597Z",
+  "branch": "javis-talk-mode",
+  "checkpoints_count": 6,
+  "files_touched": [
+    "apps/macos/Package.swift",
+    "apps/macos/Sources/OpenClaw/SettingsRootView.swift",
+    "apps/macos/Sources/OpenClaw/SpeakerVerifier.swift",
+    "apps/macos/Sources/OpenClaw/TalkModeRuntime.swift",
+    "apps/macos/Sources/OpenClaw/TalkModeSettings.swift",
+    "git-hooks/commit-msg",
+    "git-hooks/post-commit",
+    "git-hooks/pre-push",
+    "git-hooks/prepare-commit-msg",
+    "scripts/diaglog.sh"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "dacaa26053e7",
+  "token_usage": {
+    "input_tokens": 7480,
+    "cache_creation_tokens": 389365,
+    "cache_read_tokens": 11794892,
+    "output_tokens": 13863,
+    "api_call_count": 112
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-02-21T06:58:58.177488Z",
+    "agent_lines": 619,
+    "human_added": 209,
+    "human_modified": 89,
+    "human_removed": 0,
+    "total_committed": 917,
+    "agent_percentage": 67.50272628135224
+  },
+  "transcript_path": ".claude/projects/-Users-d43103-Workspace-projects-javis/ecfc456f-50fc-47a6-a8b9-deabbb4f2e41.jsonl"
+}
