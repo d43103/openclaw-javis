@@ -1005,6 +1005,9 @@ struct SettingsTab: View {
         // Reset onboarding state + clear saved gateway connection (the two things RootCanvas checks).
         GatewaySettingsStore.clearLastGatewayConnection()
 
+        // Clear stored TLS fingerprints so onboarding can discover and re-pin the current cert.
+        GatewayTLSStore.clearAllFingerprints()
+
         // RootCanvas also short-circuits onboarding when these are true.
         self.onboardingComplete = false
         self.hasConnectedOnce = false

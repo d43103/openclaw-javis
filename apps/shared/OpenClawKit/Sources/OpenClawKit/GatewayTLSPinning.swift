@@ -35,6 +35,17 @@ public enum GatewayTLSStore {
         let key = self.keyPrefix + stableID
         self.defaults.set(value, forKey: key)
     }
+
+    public static func clearFingerprint(stableID: String) {
+        let key = self.keyPrefix + stableID
+        self.defaults.removeObject(forKey: key)
+    }
+
+    public static func clearAllFingerprints() {
+        let d = self.defaults
+        let keysToRemove = d.dictionaryRepresentation().keys.filter { $0.hasPrefix(self.keyPrefix) }
+        keysToRemove.forEach { d.removeObject(forKey: $0) }
+    }
 }
 
 public final class GatewayTLSPinningSession: NSObject, WebSocketSessioning, URLSessionDelegate, URLSessionTaskDelegate, @unchecked Sendable {
